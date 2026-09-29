@@ -1,0 +1,113 @@
+---
+Fait par Mathura SANTHALINGAM (12212867)
+pour créer un bloc de code -> cmd + opt + I
+pour executer un bloc de code : cmd + entrée
+
+---
+
+*** Partie 1 : Quiz ***
+
+Question 1 : 4
+Question 2 : 2
+Question 3 : 1
+Question 4 : 3 -> JUSTIFICATION : le revenu en euros a un 0 naturel donc on passe bien d'une variable de ratios à une variable qualititative ordinale puisqu'après découpage on a bien des catégories naturellement ordonnées.
+Question 5 : 4 -> JUSTIFICATION : l'écart-type = 0 donc il n'y a aucune dispersion donc toutes les valeurs sont égales à la moyenne, donc 100% des clients sont moyennement satisfaits.
+Question 6 : 4
+Question 7 : 2
+Question 8 : 4
+Question 9 : 1
+Question 10 : 4 -> Voici la fonction pour calculer le résultat :
+
+```{r}
+fun <- function(x) {
+  len = length(x)
+  if (len%%2 == 0)
+    res = 0.5*(x[len/2]+x[(len/2)+1])
+  else
+    res = x[(len+1)/2]
+  res
+}
+d = c(1,2,3)
+fun(d)
+```
+
+
+
+*** Partie 2 : ***
+
+Question 1 : 
+```{r}
+a <- 1:3
+b <- 4:6
+c <- 7:9
+matrice <- cbind(a,b,c)
+matrice
+```
+Question 2 :
+```{r}
+df0 <- read.table("Resources-20260928/Table0.txt")
+colnames(df0) <- c("Nom", "Age", "Taille", "Poids", "Sexe")
+rownames(df0) <- df0$Nom
+df0$Nom <- NULL
+df0
+```
+
+Question 3 :
+```{r}
+df1 <- read.table("Resources-20260928/Table1.txt")
+nrow(df1)
+ncol(df1)
+df1
+```
+Table1.txt contient 8 lignes et 5 colonnes.
+
+```{r}
+df2 <- read.table("Resources-20260928/Table1.txt")
+df2 <- read.table("Resources-20260928/Table1.txt", header = TRUE, row.names = "Name", stringsAsFactors = FALSE)
+df2
+
+```
+
+Question 4 :
+```{r}
+cereals <- read.csv("Resources-20260928/Cereals.csv")
+head(cereals)
+str(cereals)
+```
+Le jeu de données cereals contient 77 observations (77 marques de céréales) et 13 variables (notamment les calories, le nombre de protéines, etc).
+On a 3 variables nominales : Cereal name, Supplier et Cold or Hot
+On a 10 variables de ratios : calories, protein, fat, sodium, fiber, carbo, sugars, potass, rating et vitamins
+
+```{r}
+cereals$totalcarb <- cereals$carbo + cereals$sugars
+nrow(subset(cereals, Cold.or.Hot == "H"))
+length(unique(cereals$Supplier))
+cereals_k <- subset(cereals, Supplier == "K")
+cereals_80_20 <- subset(cereals, calories < 80 & vitamins > 20)
+cereals_1sugar <- subset(cereals, sugars >= 1, select = c("Cereal.name", "calories", "vitamins"))
+nrow(subset(cereals, sugars >= 1))
+head(cereals_1sugar)
+write.csv(cereals_1sugar, "Resources-20260928/Cereals_1sugar.csv")
+colnames(cereals)[colnames(cereals) == "Supplier"] <- "Producteur"
+cereals
+```
+
+
+Question 5 :
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
