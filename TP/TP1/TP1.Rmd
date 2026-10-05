@@ -45,27 +45,26 @@ matrice
 ```
 Question 2 :
 ```{r}
-df0 <- read.table("Resources-20260928/Table0.txt")
-colnames(df0) <- c("Nom", "Age", "Taille", "Poids", "Sexe")
-rownames(df0) <- df0$Nom
-df0$Nom <- NULL
-df0
+t0 <- read.table("Resources-20260928/Table0.txt")
+colnames(t0) <- c("Nom", "Age", "Taille", "Poids", "Sexe")
+rownames(t0) <- t0$Nom
+t0$Nom <- NULL
+t0
 ```
 
 Question 3 :
 ```{r}
-df1 <- read.table("Resources-20260928/Table1.txt")
-nrow(df1)
-ncol(df1)
-df1
+t1 <- read.table("Resources-20260928/Table1.txt")
+nrow(t1)
+ncol(t1)
+t1
 ```
 Table1.txt contient 8 lignes et 5 colonnes.
 
 ```{r}
-df2 <- read.table("Resources-20260928/Table1.txt")
-df2 <- read.table("Resources-20260928/Table1.txt", header = TRUE, row.names = "Name", stringsAsFactors = FALSE)
-df2
-
+t2 <- read.table("Resources-20260928/Table1.txt")
+t2 <- read.table("Resources-20260928/Table1.txt", header = TRUE, row.names = "Name", stringsAsFactors = FALSE)
+t2
 ```
 
 Question 4 :
@@ -83,7 +82,9 @@ cereals$totalcarb <- cereals$carbo + cereals$sugars
 nrow(subset(cereals, Cold.or.Hot == "H"))
 length(unique(cereals$Supplier))
 cereals_k <- subset(cereals, Supplier == "K")
+head(cereals_k)
 cereals_80_20 <- subset(cereals, calories < 80 & vitamins > 20)
+head(cereals_80_20)
 cereals_1sugar <- subset(cereals, sugars >= 1, select = c("Cereal.name", "calories", "vitamins"))
 nrow(subset(cereals, sugars >= 1))
 head(cereals_1sugar)
@@ -91,23 +92,63 @@ write.csv(cereals_1sugar, "Resources-20260928/Cereals_1sugar.csv")
 colnames(cereals)[colnames(cereals) == "Supplier"] <- "Producteur"
 cereals
 ```
+On les 77 céréales auxquels on ajoute totalcarb, puis on trouve 3 céréales hot, 7 fournisseurs uniques, 23 céréales Kellogg's, 3 céréales à moins de 80 calories et plus de 20 vitamines, et 69 céréales avec au moins 1 unité de sucre.
 
 
 Question 5 :
 ```{r}
-
+data(islands)
+length(islands)
 ```
+Mesures de tendance centrale :
+```{r}
+mean(islands)
+median(islands)
+```
+moyenne = 1252.729
+médiance = 41
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+Tailles max et min des îles en fonction de range :
+```{r}
+valeurs_min_max <- range(islands)
+valeurs_min_max[2]
+valeurs_min_max[1]
+```
+Mesures de dispersion :
+```{r}
+ecart_type <- sd(islands)
+ecart_type
+quantile(islands, probs = c(0, 0.25, 0.5, 0.75, 1))
+quantile(islands, probs = c(0.005, 0.95))
+```
+Intervalle interquartile
+```{r}
+iqr <- IQR(islands)
+iqr
+```
+Histogrammes des îles :
+```{r}
+freq <- hist(islands, freq = TRUE)
+freq
+prop <- hist(islands, freq = FALSE)
+prop
+```
+Diagramme en boîte :
+```{r}
+boxplot(islands, outline = TRUE)
+boxplot(islands, outline = FALSE)
+```
+Question 6 :
+```{r}
+sales <- read.csv("Resources-20260928/yearly_sales.csv")
+```
+Variable factorielle ordinale (spender):
+```{r}
+sales$spender <- ifelse(sales$sales_total < 100, "small", 
+                        ifelse(sales$sales_total < 500, "medium", "big"))
+sales$spender <- factor(sales$spender, 
+                        levels = c("small", "medium", "big"), 
+                        ordered = TRUE)
+sales
+```
