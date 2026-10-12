@@ -1,0 +1,100 @@
+---
+Fait par Mathura SANTHALINGAM (12212867)
+pour créer un bloc de code -> cmd + opt + I
+pour executer un bloc de code : cmd + entrée
+---
+
+Partie 1 : Représentations tabulaires et graphiques
+
+On charge et visualise les premières lignes de mtcars
+```{r}
+data(mtcars)
+head(mtcars)
+str(mtcars)
+```
+Ce dataset contient les caractéristiques techniques et les performances de modèles d'automobiles (mpg = consommation de carburant etc).
+
+Question 1:
+```{r}
+mon_tableau <- table(mtcars$cyl, mtcars$am)
+colnames(mon_tableau) <- c("Auto", "Manu")
+rownames(mon_tableau) <- c("4 cyl", "6 cyl", "8 cyl")
+mon_tableau
+```
+Question 2 :
+Histogrammes de wt (le poids) :
+```{r}
+hist <- hist(mtcars$wt, breaks = 5)
+hist
+```
+Question 3 :
+Diagramme en boîte de wt (le poids) :
+```{r}
+boxplot(mtcars$wt)
+```
+
+Partie 2 : Correlation
+Données : a = Âge ; w = Poids
+```{r}
+a <- c(11, 15, 23, 46, 52, 75)
+w <- c(34, 49, 58, 62, 69, 64)
+```
+
+Question 1 : voir pdf joint pour la partie calculs à la main
+```{r}
+correlation <- cor(a, w, method = "pearson")
+print(correlation)
+```
+Interprétation : On a une relation entre l'âge et le poids qui est forte (coef proche de 1) et la corrélation étant positive, plus l'âge augmente, plus le poids augmente (les variables vont dans le même sens).
+
+
+Question 2 : voir pdf joint pour la partie calculs à la main
+```{r}
+rho_spearman <- cor(a, w, method = "spearman")
+print(rho_spearman)
+```
+Interprétation : Comme rho est proche de 1, on a une corrélation monotonique donc les classements des valeurs de l'âge et du poids sont presque dans le même ordre : presque chaque fois que l'âge augmente, le poids augmente aussi (il n'y a d'ailleurs qu'une fois que ce n'est pas le cas).
+
+Question 3 : Nuage de points de la relation Âge-Poids
+```{r}
+plot(jitter(a), jitter(w), pch = 23, bg = "blue", xlab = "Âge (a)", ylab = "Poids (w)", main = "Nuage de points de la relation Âge-Poids")
+```
+On voit bien ce que l'on a interprété aux questions précédentes.
+
+Partie 3 : Data Frames
+
+Question 1 : on convertit state.x77 en dataframe et on vérifie que la conversion est un succès :
+```{r}
+class(state.x77)
+state_df <- as.data.frame(state.x77)
+is.data.frame(state_df)
+```
+
+Question 2 :
+```{r}
+state_df$states <- rownames(state_df)
+rownames(state_df) <- NULL
+head(state_df)
+```
+Question 3 :
+```{r}
+etats <- subset(state_df, Income > 4300 & Population > 1000)
+nrow(etats)
+```
+
+Question 4 :
+```{r}
+df_trie <- state_df[order(state_df$Income, decreasing = TRUE), ]
+head(df_trie, n = 5)
+```
+Question 5 :
+```{r}
+state_df$frost_cat <- ifelse(state_df$Frost <= 30, "faible", ifelse(state_df$Frost <= 90, "intermédiaire", "élevé"))
+
+# comme il est demandé un attribut ordinal :
+state_df$frost_cat <- factor(state_df$frost_cat, levels = c("faible", "intermédiaire", "élevé"), ordered = TRUE)
+
+etats_faibles <- state_df$states[state_df$frost_cat == "faible"]
+print(etats_faibles)
+```
+
