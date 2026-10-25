@@ -1,0 +1,194 @@
+---
+title: "TP3-ACP"
+author: "Mathura SANTHALINGAM (12212867)"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dev = "png", dpi = 150)
+```
+
+pour créer un bloc de code -> cmd + opt + I
+pour executer un bloc de code : cmd + entrée
+
+1. Préparation et calcul de l'ACP
+
+Question 1 :
+```{r}
+# install.packages("FactoMineR")
+# install.packages("factoextra")
+library(FactoMineR)
+library(factoextra)
+```
+
+Question 2 :
+```{r}
+data("decathlon2")
+summary(decathlon2)
+ncol(decathlon2)
+```
+Il y a donc 13 variables dans ce jeu de données.
+
+Question 3 :
+Les variables qui correspondent aux 10 différents sports (situés dans les colonnes 1 à 10) sont : X100m, Long.jump, Shot.put, High.jump, X400m, X110m.hurdle, Discus, Pole.vault, Javeline et X1500m.
+```{r}
+les23_prems <- decathlon2[1:23, 1:10]
+les23_prems
+```
+
+Question 4 :
+
+Les paramètres les plus importants de la fonction PCA() du package FactoMineR sont :
+
+- X : un data frame avec les données sur lesquelles l'ACP doit être appliquée
+- scale.unit : si TRUE alors les données sont centrées et réduites avant l'ACP (TRUE par défaut)
+- ncp : le nombre de dimensions (composantes principales) gardées dans les résultats (5 par défaut)
+- graph : si TRUE, les graphiques de base de l'ACP s'affichent automatiquement (TRUE par défaut)
+
+```{r}
+decathlon_pca <- PCA(les23_prems, scale.unit = TRUE, graph = TRUE)
+print(decathlon_pca)
+```
+
+2. Interprétation et visualisation
+
+Question 5 :
+
+- get_eigenvalue() : donne les valeurs propres, le pourcentage de variance expliquée et la variance cumulée pour chaque composante principale -> paramètre important : le résultat de l'ACP
+
+- fviz_eig() : donne un scree plot pour visualiser les valeurs propres ou la proportion de variances -> paramètres importants : objet ACP, addlabels qui affiche les pourcentages sur le graphique et ncp qui est le nombre de dimensions à afficher
+
+- get_pca_ind() : donne les résultats statistiques spécifiques aux individus (coordonnées, la qualité de représentation cos2, les contributions) -> paramètre important : résultalt de PCA
+
+- get_pca_var() : donne les résultats statistiques spécifiques aux variables (coordonnées, cos2, contributions) -> paramètre important : résultalt de PCA
+
+fviz_pca_ind() : trace le graphique représentant les individus dans le nouvel espace des composantes principales -> paramètres importants : X, col.ind (pour colorer les individus), repel (évite le chevauchement des étiquettes)
+
+fviz_pca_var() : trace le cercle des corrélations illustrant les relations entre les variables -> paramètres importants : X, col.var, repel
+
+fviz_pca_biplot() : donne un biplot superposant les individus et les variables sur le même graphique -> paramètres clés : X, repel
+
+Question 6 :
+```{r}
+valeurs_propres <- get_eigenvalue(decathlon_pca)
+print(valeurs_propres)
+```
+Question 7 :
+```{r}
+var_3_prems <- valeurs_propres[3, "cumulative.variance.percent"]
+print(var_3_prems)
+```
+
+Question 8 :
+D'après la question 6, on voit que la valeur propre de la 4ème composante principale est inférieure à 1 donc elle résume moins d'information qu'une seule variable initiale donc on considère que cette composante principale n'est plus suffisamment significative.
+
+Question 9 :
+```{r}
+fviz_eig(decathlon_pca, addlabels = TRUE)
+```
+Les dimensions 4 et 5 n'ajoutent que des proportions marginales donc à partir de ce screeplot j'aurais retenu que 3 CP.
+
+Question 10 :
+```{r}
+matrices <- get_pca_var(decathlon_pca)
+print(matrices)
+str(matrices)
+```
+
+Question 11 :
+Un cercle de corrélation est un graphique pour visualiser la projection des variables initiales sur un plan défini par deux composantes principales.
+
+Il permet de lire visuellement plusieurs informations :
+- corrélation avec les CP : la projection de l'extrémité d'une flèche sur les axes horizontal ou vertical donne la valeur de la corrélation de cette variable avec l'axe.
+- corrélation entre les variables : l'angle entre deux vecteurs donne leur degré de corrélation : un angle très petit signifie une corrélation positive forte, un angle droit indique une absence de corrélation et un angle plat indique une corrélation négative forte
+- qualité de représentation : plus la pointe d'une flèche s'approche de la circonférence du cercle (de rayon 1), mieux la variable est représentée et résumée par les deux composantes du graphique
+
+Question 12 :
+Les données pour tracer le cercle de corrélation sont les coordonnées des variables sur les axes principaux qui sont leurs coefficients de corrélation avec ces axes
+
+Ces informations sont dans la matrice de la question 10 (matrices$cor) (get_pca_var())
+
+Question 13 :
+```{r}
+fviz_pca_var(decathlon_pca, col.var = "cos2", gradient.cols = c("blue", "red"), repel = TRUE)
+```
+Question 14 :
+
+- Corrélation positive des courses : les flèches des épreuves X100m, X400m et X110m.hurdle pointent dans la même direction avec des angles très petits entre elles donc FORTE CORRÉLATION
+- Groupe de force/lancer : les variables Shot.put et Discus forment un second groupe très resserré pointant vers la droite
+- Indépendance : l'angle entre l'axe des courses de vitesse et la flèche du saut à la perche (Pole.vault) est très proche d'un angle droit donc FAIBLE CORRÉLATION entre ces types d'épreuves
+- Qualité de représentation : L'échelle de couleur confirme que la majorité des épreuves sont bien représentées, leurs flèches sont longues, proches de la bordure du cercle et colorées en rouge mais la variable Javeline est moins bien capturée car sa flèche est plus courte et colorée en bleu
+
+Question 15 :
+La qualité de représentation mesure à quel point une variable initiale est fidèlement projetée sur un axe
+
+La matrice `$cos2` contient le cosinus au carré de l'angle entre le vecteur de la variable d'origine et sa projection sur la composante principale :
+
+- `$cos2` proche de 1 -> la variable est très bien représentée par cette composante
+- `$cos2` proche de 0 -> mauvaise représentation sur cet axe
+La somme des `$cos2` d'une variable sur l'ensemble de toutes les composantes principales est toujours égale à 1.
+
+Question 16 :
+```{r}
+# install.packages("corrplot")
+library(corrplot)
+```
+La fonction corrplot() remplace les valeurs numériques des matrices de corrélation par des éléments graphiques (comme des cercles ou des carrés) dont la taille et l'intensité de la couleur sont proportionnelles à la valeur dans la matrice. Cela permet d'identifier les tendances sans lire les chiffres.
+
+Question 17 :
+```{r}
+corrplot(matrices$cos2,  method = "circle", is.corr = FALSE)
+```
+
+Question 18 :
+```{r}
+fviz_cos2(decathlon_pca, choice = "var", axes = 1:2)
+```
+Question 19 :
+
+- Variables les mieux représentées : Les épreuves X100m et Long.jump ont les barres les plus hautes, avec un `$cos^2` supérieur ou égal à 0.7. Elles sont donc très bien résumées par les dimensions 1 et 2.
+- Pole.vault : l'épreuve du saut à la perche est en réalité très bien représentée sur ce premier plan, elle se classe en 3ème position des variables les mieux capturées, avec un `cos^2` proche de 0.7
+- Variable la moins bien représentée : l'épreuve Javeline est bien la variable la moins bien capturée par ces deux premières dimensions, avec le `$cos^2` le plus faible (autour de 0.35)
+
+Donc Javeline est la principale variable nécessitant d'autres dimensions pour être correctement expliquée.
+
+```{r}
+head(matrices$contrib, 4)
+```
+
+
+Question 20 :
+```{r}
+corrplot(matrices$contrib,  is.corr = FALSE, method = "circle")
+
+```
+Question 21 :
+```{r}
+fviz_contrib(decathlon_pca, choice = "var", axes = 1:2)
+```
+Question 22 :
+La fonction get_pca_ind() donne une liste de matrices avec tous les résultats pour les individus :
+- `$coord` : coordonnées spatiales des individus sur chaque CP
+- `$cos2` : cosinus carré qui quantifie la qualité de représentation de chaque individu
+- `$contrib` : contributions relatives de chaque individu à la variance de chaque axe
+
+```{r}
+individus <- get_pca_ind(decathlon_pca)
+individus
+```
+Question 23 :
+```{r}
+fviz_pca_ind(decathlon_pca, repel = TRUE)
+```
+Question 24 :
+```{r}
+fviz_pca_ind(decathlon_pca, col.ind = "cos2", gradient.cols = c("blue", "yellow", "red"), repel = TRUE)
+```
+Question 25 :
+```{r}
+fviz_cos2(decathlon_pca, choice = "ind", axes = 1:2)
+```
+
+
