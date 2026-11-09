@@ -1,0 +1,397 @@
+---
+title: "TP4-ADL"
+author: "Mathura SANTHALINGAM (12212867)"
+output:
+  html_document:
+    df_print: paged
+---
+Partie 2. Charger le jeu de données
+
+Question 1 :
+```{r}
+wine <- read.csv("wine.data", header = FALSE)
+
+head(wine)
+```
+Question 2 :
+```{r}
+colnames(wine) <- c("Customer_Segment","Alcohol","Malic_Acid","Ash","Ash_Alkanity",  "Magnesium","Total_Phenols",  "Flavanoids","Nonflavanoid_Phenols", "Proanthocyanins",  "Color_Intensity", "Hue",  "OD280","Proline")
+head(wine)
+```
+Question 3 :
+```{r}
+labels <- wine$Customer_Segment
+wine$Customer_Segment <- NULL
+wine$Customer_Segment <- labels
+
+head(wine)
+```
+Question 4 :
+```{r}
+compteur <- 0
+for (i in 1:nrow(wine)) {
+  ligne <- wine[i, ]
+  val_manquante <- FALSE
+  for (j in 1:ncol(wine)) {
+    if (is.na(ligne[j])) {
+      val_manquante <- TRUE
+    }
+  }
+  if (val_manquante) {
+    compteur <- compteur + 1
+  }
+}
+cat("Nombre de lignes avec des valeurs manquantes :", compteur, "\n")
+```
+Suppression des lignes contenant des valeurs manquantes :
+```{r}
+wine_propre <- data.frame()
+for (i in 1:nrow(wine)) {
+  ligne <- wine[i, ]
+  na_dans_ligne <- FALSE
+  for (j in 1:ncol(wine)) {
+    if (is.na(ligne[j])) {
+      na_dans_ligne <- TRUE
+    }
+  }
+  if (!na_dans_ligne) {
+    wine_propre <- rbind(wine_propre, ligne)
+  }
+}
+wine <- wine_propre
+cat("Nombre de lignes après suppression des valeurs manquantes :", nrow(wine), "\n")
+```
+
+Question 5 :
+```{r}
+summary(wine)
+```
+
+Question 6 :
+```{r}
+install.packages("caTools")
+library(caTools)
+```
+```{r}
+set.seed(123)
+div <- sample.split(wine$Customer_Segment, SplitRatio = 0.8)
+entrainement <- subset(wine, div == TRUE)
+test <- subset(wine, div == FALSE)
+nrow(entrainement)
+nrow(test)
+```
+
+Question 7 :
+```{r}
+# Normaliser seulement les colonnes numériques du train set (sauf Customer_Segment)
+entrainement_norm <- scale(entrainement[, -ncol(entrainement)])
+entrainement_norm <- data.frame(entrainement_norm, Customer_Segment = entrainement$Customer_Segment)
+
+
+# Normaliser seulement les colonnes numériques du test set (sauf Customer_Segment)
+test_norm <- scale(test[, -ncol(test)])
+test_norm <- data.frame(test_norm, Customer_Segment = test$Customer_Segment)
+```
+
+Chaque valeur d’une variable est transformée en soustrayant la moyenne de cette variable puis en divisant par son écart-type.
+On a ainsi que la moyenne de chaque variable devient 0 et l’écart-type devient 1
+Cette transformation permet de rendre toutes les variables comparables.
+
+--
+Partie 3. Construire un model SVM pour la tâche de classification des vins selon leur producteur
+
+Question 1 :
+```{r}
+install.packages("e1071")
+library(e1071)
+```
+```{r}
+entrainement_norm$Customer_Segment <- as.factor(entrainement_norm$Customer_Segment)
+test_norm$Customer_Segment <- as.factor(test_norm$Customer_Segment)
+svm_model <- svm(Customer_Segment ~ ., data = entrainement_norm, kernel = "linear")
+```
+
+Question 2 :
+```{r}
+predictions <- predict(svm_model, newdata = test_norm)
+predictions
+```
+Question 3 :
+Une matrice de confusion est un tableau qui permet de comparer les prédictions d’un modèle de classification avec les vraies valeurs : 
+- Les lignes représentent les vraies classes des observations.
+- Les colonnes représentent les classes prédites par le modèle.
+Chaque case indique combien d’observations d’une classe réelle ont été prédites dans chaque classe.
+Elle permet de visualiser les erreurs de classification et de mesurer la performance du modèle.
+
+Question 4 :
+- Accuracy : proportion d’observations correctement classées sur l’ensemble des observations
+Formule : Nombre de prédictions correctes / Nombre total de prédictions
+
+- Precision : Pour une classe donnée c’est la proportion de prédictions correctes parmi toutes les prédictions de cette classe
+Formule: vrais positifs / (vrais positifs + faux positifs)
+
+- Recall : Pour une classe donnée c’est la proportion d’observations correctement prédites parmi toutes les observations réelles de cette classe.
+Formule : vrais positifs / (vrais positifs + faux négatifs)
+
+F1-score : Moyenne harmonique de la précision et du recall.
+Formule : 2 x (précision x recall/ (précision + recall))
+
+Question 5 :
+```{r}
+confusion <- table(Actual = test_norm$Customer_Segment,
+                   Predicted = predictions)
+confusion
+
+accuracy <- sum(diag(confusion)) / sum(confusion)
+accuracy
+
+
+classes <- rownames(confusion)
+
+metrics <- data.frame(Classe = classes, Precision = numeric(length(classes)), Recall = numeric(length(classes)), F1 = numeric(length(classes)), Support = numeric(length(classes)))
+
+for (i in seq_along(classes)) {
+  cls <- classes[i]
+  TP <- confusion[cls, cls]
+  FP <- sum(confusion[, cls]) - TP
+  FN <- sum(confusion[cls, ]) - TP
+  
+  precision_i <- if ((TP + FP) == 0) 0 else TP / (TP + FP)
+  recall_i    <- if ((TP + FN) == 0) 0 else TP / (TP + FN)
+  f1_i        <- if ((precision_i + recall_i) == 0) 0 else 
+    (2 * precision_i * recall_i) / (precision_i + recall_i)
+  
+  metrics$Precision[i] <- round(precision_i, 4)
+  metrics$Recall[i]    <- round(recall_i, 4)
+  metrics$F1[i]        <- round(f1_i, 4)
+  metrics$Support[i]   <- sum(confusion[cls, ])
+}
+
+metrics
+```
+
+
+
+Partie 4. Réduction de dimensionalité à l’aide de l’ACP
+Question 1 :
+```{r}
+install.packages("caret")
+install.packages("e1071")
+library(caret)
+library(e1071)
+```
+Question 2 :
+```{r}
+modele_avec_pca <- prcomp(entrainement_norm[, -ncol(entrainement_norm)], center = TRUE, scale. = TRUE)
+summary(modele_avec_pca)
+
+train_set_PCA <- data.frame(modele_avec_pca$x[, 1:2], Customer_Segment = entrainement_norm$Customer_Segment)
+
+test_pca_valeur <- predict(modele_avec_pca, newdata = test_norm[, -ncol(test_norm)])
+test_set_PCA <- data.frame(test_pca_valeur[, 1:2], Customer_Segment = test_norm$Customer_Segment)
+```
+Question 3 :
+```{r}
+head(train_set_PCA)
+head(test_set_PCA)
+```
+Question 4 :
+```{r}
+svm_pca <- svm(Customer_Segment ~ ., data = entrainement_pca, kernel = "linear")
+```
+
+Question 5 :
+```{r}
+predictions_pca <- predict(svm_pca, newdata = test_pca)
+head(predictions_pca)
+```
+
+Question 6 :
+```{r}
+matrice_confusion_pca <- confusionMatrix(predictions_pca, test_pca$Customer_Segment)
+matrice_confusion_pca
+```
+Question 7 :
+```{r}
+library(lattice)
+```
+```{r}
+xyplot(PC2 ~ PC1, data = entrainement_pca, groups = Customer_Segment, auto.key = list(title = "Customer_Segment", columns = 3), xlab = "pc1", ylab = "pc2",)
+```
+Question 8 :
+```{r}
+set = entrainement_pca
+X1 = seq(min(set$PC1) - 1, max(set$PC1) + 1, by = 0.01)
+X2 = seq(min(set$PC2) - 1, max(set$PC2) + 1, by = 0.01)
+grid_set = expand.grid(PC1 = X1, PC2 = X2)
+y_grid = predict(svm_pca, newdata = grid_set)
+plot(set$PC1, set$PC2,
+     main = 'SVM (Principal Component Train set)',
+     xlab = 'PC1', ylab = 'PC2',
+     xlim = range(X1), ylim = range(X2))
+points(grid_set, pch = '.', col = ifelse(y_grid == 2, 'deepskyblue', ifelse(y_grid == 1, 'springgreen3', 'tomato')))
+points(set, pch = 21, bg = ifelse(set[, 3] == 2, 'blue3', ifelse(set[, 3] == 1, 'green4', 'red3')))
+```
+
+Il permet de visualiser les frontières de décision du modèle SVM dans l'espace réduit des deux composantes principales. Concrètement, une grille de points couvrant l'ensemble du plan est générée afin que le modèle en prédise la classe, ce qui permet de colorer le fond selon les zones de décision.
+
+Les données d'entraînement réelles sont ensuite superposées sous forme de points colorés par classe. Cette représentation graphique offre une double lecture : elle met en évidence la manière dont le classifieur sépare les différentes catégories et permet d'évaluer visuellement la qualité de la classification.
+
+Question 9 :
+```{r}
+library(lattice)
+
+xyplot(PC2 ~ PC1, data = test_pca, 
+       groups = Customer_Segment,
+       auto.key = list(title = "Customer_Segment", columns = 3),
+       xlab = "PC1",
+       ylab = "PC2",
+       main = "Scatter plot des 2 CP du test set")
+
+set = test_pca
+X1 = seq(min(set$PC1) - 1, max(set$PC1) + 1, by = 0.01)
+X2 = seq(min(set$PC2) - 1, max(set$PC2) + 1, by = 0.01)
+grid_set = expand.grid(PC1 = X1, PC2 = X2)
+y_grid = predict(svm_pca, newdata = grid_set)
+
+plot(set$PC1, set$PC2,
+     main = 'SVM (Principal Component Test set)',
+     xlab = 'PC1', ylab = 'PC2',
+     xlim = range(X1), ylim = range(X2))
+
+points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', ifelse(y_grid == 2, 'deepskyblue', 'tomato')))
+
+points(set$PC1, set$PC2, pch = 21, bg = ifelse(set$Customer_Segment == 1, 'green4', ifelse(set$Customer_Segment == 2, 'blue3', 'red3')))
+```
+On observe un regroupement des observations de chaque classe dans leurs zones de décision, ce qui montre la grande performance du modèle SVM. Ce constat est confirmé par la matrice de confusion et les métriques associées, qui affichent des scores égaux à 1 (parfaits). Les deux CP suffisent donc à séparer de manière idéale les trois classes de ce jeu de données.
+
+Question 10 :
+C'est impossible de représenter graphiquement le modèle à partir des données d'origine, car celles-ci comportent treize variables. Étant donné qu'un plan offre au maximum deux dimensions, la visualisation simultanée de l'ensemble des caractéristiques est impossible. La réduction de dimension par ACP résout cette limite résultant sur deux composantes principales, ce qui permet d'afficher directement les frontières de décision dans un espace en 2D.
+
+
+Partie 5. Réduction de dimensionalité à l’aide de l’ALD
+
+Question 1 :
+```{r}
+install.packages("MASS")
+library(MASS)
+```
+```{r}
+modele_avec_lda <- lda(Customer_Segment ~ ., data = entrainement_norm)
+```
+
+Question 2 :
+```{r}
+entrainement_lda <- predict(modele_avec_lda, newdata = entrainement_norm)
+classes_entrainement <- entrainement_lda$class  
+
+test_lda <- predict(modele_avec_lda, newdata = test_norm)
+classes_test <- test_lda$class
+```
+
+Question 3 :
+```{r}
+head(classes_entrainement)
+head(classes_test)
+```
+Question 4 :
+```{r}
+entrainement_lda2 <- data.frame(LD1 = entrainement_lda$x[,1],
+                           LD2 = entrainement_lda$x[,2],
+                           Customer_Segment = entrainement_norm$Customer_Segment)
+test_lda2 <- data.frame(LD1 = test_lda$x[,1],
+                          LD2 = test_lda$x[,2],
+                          Customer_Segment = test_norm$Customer_Segment)
+
+head(entrainement_lda2)
+head(test_lda2)
+```
+Question 5 :
+```{r}
+library(e1071)
+
+entrainement_lda2$Customer_Segment <- as.factor(entrainement_lda2$Customer_Segment)
+test_lda2$Customer_Segment <- as.factor(test_lda2$Customer_Segment)
+
+svm_lda <- svm(Customer_Segment ~ ., data = entrainement_lda2, kernel = "linear")
+
+predictions_lda <- predict(svm_lda, newdata = test_lda2)
+
+head(predictions_lda)
+```
+
+Question 6 :
+```{r}
+library(caret)
+
+matrice_confusion_lda <- confusionMatrix(predictions_lda, test_lda2$Customer_Segment)
+matrice_confusion_lda
+```
+
+Question 7 :
+Le modèle SVM entraîné sur les deux composantes discriminantes de l'ALD performe bien :
+
+1) Il classe correctement environ 97 % des vins du jeu de test, (accuracy de 0,9722).
+
+2) la prédiction est parfaite pour les classes 1 et 3, un seul vin de la classe 2 a été mal classé.
+
+3) Les métriques d'évaluation ont des niveaux très élevés, donc bonne discrimination des trois classes.
+
+Donc malgré la réduction de dimension à deux variables, le modèle sépare efficacement les types de vins, ce qui confirme que l'ALD a préservé l'information discriminante essentielle.
+
+Question 8 :
+```{r}
+xyplot(LD2 ~ LD1, data = entrainement_lda2, groups = Customer_Segment, auto.key = list(title = "Classe de vin", columns = 3), xlab = "LD1", ylab = "LD2", main = "entrainement avec LDA")
+```
+
+Question 9 :
+```{r}
+X1 <- seq(min(entrainement_lda2$LD1) - 1, max(entrainement_lda2$LD1) + 1, by = 0.01)
+X2 <- seq(min(entrainement_lda2$LD2) - 1, max(entrainement_lda2$LD2) + 1, by = 0.01)
+grid_set <- expand.grid(LD1 = X1, LD2 = X2)
+y_grid <- predict(svm_lda, newdata = grid_set)
+
+plot(grid_set, pch = ".", col = ifelse(y_grid == 1, "springgreen3", ifelse(y_grid == 2, "deepskyblue", "tomato")), xlab = "LD1", ylab = "LD2", main = "SVM + LDA train set")
+
+points(entrainement_lda2$LD1, entrainement_lda2$LD2,
+       pch = 21,
+       bg = ifelse(entrainement_lda2$Customer_Segment == 1, "green4", ifelse(entrainement_lda2$Customer_Segment == 2, "blue3", "red3")))
+```
+
+Question 10 :
+```{r}
+set_test <- test_lda2
+
+X1 <- seq(min(test_lda2$LD1) - 1, max(test_lda2$LD1) + 1, by = 0.01)
+X2 <- seq(min(test_lda2$LD2) - 1, max(test_lda2$LD2) + 1, by = 0.01)
+grid_set <- expand.grid(LD1 = X1, LD2 = X2)
+
+y_grid <- predict(svm_lda, newdata = grid_set)
+
+plot(grid_set, pch = ".", col = ifelse(y_grid == 1, "springgreen3", ifelse(y_grid == 2, "deepskyblue", "tomato")), xlab = "LD1", ylab = "LD2", main = "SVM + LDA Test set")
+
+# Ajouter les vrais points du test set par-dessus
+points(test_lda2$LD1, test_lda2$LD2, pch = 21, bg = ifelse(test_lda2$Customer_Segment == 1, "green4", ifelse(test_lda2$Customer_Segment == 2, "blue3", "red3")))
+
+
+library(lattice)
+
+xyplot(LD2 ~ LD1, data = test_lda2, groups = Customer_Segment, auto.key = list(title = "Classe de vin", columns = 3), xlab = "LD1", ylab = "LD2", main = "Test set visualisé avec LDA")
+```
+
+Conclusion :
+L'objectif de ce TP était d'analyser l'impact de la réduction de dimensionnalité (par ACP et ADL) sur les performances d'un classifieur SVM appliqué à la classification des vins. Les principaux enseignements de cette étude sont les suivants :
+
+Efficacité de la réduction de dimensionnalité : Le passage de 13 variables à seulement 2 composantes (via l'ACP ou l'ADL) a permis de simplifier drastiquement le modèle sans perte notable d'information, ce qui témoigne de la forte corrélation et redondance des caractéristiques chimiques initiales.
+
+Performances comparées des modèles :
+
+Données initiales (13 variables) : accuracy de 97,22 %.
+
+ACP (2 variables, approche non supervisée) : exactitude parfaite de 100 %, démontrant sa capacité à capturer la variance essentielle pour séparer idéalement les classes.
+
+ADL (2 variables, approche supervisée) : exactitude de 97,22 %, avec une excellente discrimination et une seule erreur d'attribution sur le jeu de test.
+
+Apport de la visualisation : La projection en deux dimensions s'est révélée indispensable pour tracer et interpréter graphiquement les frontières de décision linéaires du SVM — une visualisation rendue impossible par la complexité de l'espace initial à 13 dimensions. Les graphiques ont permis de valider visuellement la compacité et la netteté des groupes.
+
+Bilan final : Bien que l'ACP ait légèrement surperformé sur ce cas d'usage (100 % de précision), les deux méthodes s'avèrent extrêmement efficaces. Elles permettent d'allier simplicité structurelle, rapidité d'exécution et forte interprétabilité, tout en maintenant un niveau de performance exceptionnel (> 97 %).
