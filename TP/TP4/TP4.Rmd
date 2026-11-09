@@ -4,6 +4,7 @@ author: "Mathura SANTHALINGAM (12212867)"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 Partie 2. Charger le jeu de données
 
@@ -69,7 +70,7 @@ summary(wine)
 
 Question 6 :
 ```{r}
-install.packages("caTools")
+#install.packages("caTools")
 library(caTools)
 ```
 ```{r}
@@ -102,7 +103,7 @@ Partie 3. Construire un model SVM pour la tâche de classification des vins selo
 
 Question 1 :
 ```{r}
-install.packages("e1071")
+#install.packages("e1071")
 library(e1071)
 ```
 ```{r}
@@ -175,8 +176,8 @@ metrics
 Partie 4. Réduction de dimensionalité à l’aide de l’ACP
 Question 1 :
 ```{r}
-install.packages("caret")
-install.packages("e1071")
+#install.packages("caret")
+#install.packages("e1071")
 library(caret)
 library(e1071)
 ```
@@ -187,8 +188,8 @@ summary(modele_avec_pca)
 
 train_set_PCA <- data.frame(modele_avec_pca$x[, 1:2], Customer_Segment = entrainement_norm$Customer_Segment)
 
-test_pca_valeur <- predict(modele_avec_pca, newdata = test_norm[, -ncol(test_norm)])
-test_set_PCA <- data.frame(test_pca_valeur[, 1:2], Customer_Segment = test_norm$Customer_Segment)
+test_set_PCA_valeur <- predict(modele_avec_pca, newdata = test_norm[, -ncol(test_norm)])
+test_set_PCA <- data.frame(test_set_PCA_valeur[, 1:2], Customer_Segment = test_norm$Customer_Segment)
 ```
 Question 3 :
 ```{r}
@@ -197,18 +198,18 @@ head(test_set_PCA)
 ```
 Question 4 :
 ```{r}
-svm_pca <- svm(Customer_Segment ~ ., data = entrainement_pca, kernel = "linear")
+svm_pca <- svm(Customer_Segment ~ ., data = train_set_PCA, kernel = "linear")
 ```
 
 Question 5 :
 ```{r}
-predictions_pca <- predict(svm_pca, newdata = test_pca)
+predictions_pca <- predict(svm_pca, newdata = test_set_PCA)
 head(predictions_pca)
 ```
 
 Question 6 :
 ```{r}
-matrice_confusion_pca <- confusionMatrix(predictions_pca, test_pca$Customer_Segment)
+matrice_confusion_pca <- confusionMatrix(predictions_pca, test_set_PCA$Customer_Segment)
 matrice_confusion_pca
 ```
 Question 7 :
@@ -216,11 +217,11 @@ Question 7 :
 library(lattice)
 ```
 ```{r}
-xyplot(PC2 ~ PC1, data = entrainement_pca, groups = Customer_Segment, auto.key = list(title = "Customer_Segment", columns = 3), xlab = "pc1", ylab = "pc2",)
+xyplot(PC2 ~ PC1, data = train_set_PCA, groups = Customer_Segment, auto.key = list(title = "Customer_Segment", columns = 3), xlab = "pc1", ylab = "pc2",)
 ```
 Question 8 :
 ```{r}
-set = entrainement_pca
+set = train_set_PCA
 X1 = seq(min(set$PC1) - 1, max(set$PC1) + 1, by = 0.01)
 X2 = seq(min(set$PC2) - 1, max(set$PC2) + 1, by = 0.01)
 grid_set = expand.grid(PC1 = X1, PC2 = X2)
@@ -241,14 +242,14 @@ Question 9 :
 ```{r}
 library(lattice)
 
-xyplot(PC2 ~ PC1, data = test_pca, 
+xyplot(PC2 ~ PC1, data = test_set_PCA, 
        groups = Customer_Segment,
        auto.key = list(title = "Customer_Segment", columns = 3),
        xlab = "PC1",
        ylab = "PC2",
        main = "Scatter plot des 2 CP du test set")
 
-set = test_pca
+set = test_set_PCA
 X1 = seq(min(set$PC1) - 1, max(set$PC1) + 1, by = 0.01)
 X2 = seq(min(set$PC2) - 1, max(set$PC2) + 1, by = 0.01)
 grid_set = expand.grid(PC1 = X1, PC2 = X2)
@@ -273,7 +274,7 @@ Partie 5. Réduction de dimensionalité à l’aide de l’ALD
 
 Question 1 :
 ```{r}
-install.packages("MASS")
+#install.packages("MASS")
 library(MASS)
 ```
 ```{r}
